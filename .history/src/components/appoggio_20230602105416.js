@@ -1,0 +1,2 @@
+{ "click": [{ "layer": "sentieri", "delegates": {} }], 
+"mouseenter": [{ "layer": "sentieri", "delegates": {} }, { "layer": "destinazioni", "delegates": {} }, { "layer": "incroci", "delegates": {} }], "mouseleave": [{ "layer": "sentieri", "delegates": {} }, { "layer": "destinazioni", "delegates": {} }, { "layer": "incroci", "delegates": {} }] }

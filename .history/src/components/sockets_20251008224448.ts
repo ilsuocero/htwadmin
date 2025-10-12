@@ -1,0 +1,69 @@
+import io, { Socket } from 'socket.io-client';
+import ENV from '../ENV';
+import { DefaultEventsMap } from '@socket.io/component-emitter';
+import { ConnectionState } from '../types/geojson';
+
+let socketInstance: Socket<DefaultEventsMap, DefaultEventsMap> | null = null;
+
+export const emitEvent = async (
+  connectionState: ConnectionState, 
+  eventName: string, 
+  ...args: any[]
+): Promise<Socket<DefaultEventsMap, DefaultEventsMap> | void> => {
+
+    console.log('HtWsockets-->[emitEvent]: connectionState', JSON.stringify(connectionState));
+    if (!connectionState.isOnline) {
+        alert('Offline Please connect to the internet.');
+        return;
+    }
+
+    // Log the token that will be used for Socket.io authentication
+    console.log('HtWsockets-->[emitEvent]: Token to be used for Socket.io auth:', connectionState.tokenIO);
+    
+    // Try different token formats to see what the server expects
+    const tokenFormats = [
+        { token: `Bearer ${connectionState.tokenIO}` }, // Original format
+        { token: connectionState.tokenIO }, // Without Bearer prefix
+        { authorization: `Bearer ${connectionState.tokenIO}` }, // Different field name
+        { authorization: connectionState.tokenIO }, // Different field name without Bearer
+    ];
+    
+    console.log('HtWsockets-->[emitEvent]: Trying auth formats:', tokenFormats);
+    console.log('HtWsockets-->[emitEvent]: Using format 1 (Bearer prefix):', tokenFormats[0]);
+
+    // Use relative URL when in development to leverage the proxy
+    const serverUrl = process.env.NODE_ENV === 'development' ? '' : ENV.SERVER;
+    console.log('HtWsockets-->[emitEvent]: Creating Socket.io connection to', serverUrl || 'proxy (relative URL)');
+    
+    socketInstance = io(serverUrl, {
+        auth: tokenFormats[0], // Start with original format
+        transports: ['polling'], // Force polling to work with proxy
+    console.log('HtWsockets-->[emitEvent]: socketInstance created, emitting event:', eventName);
+    socketInstance.emit(eventName, ...args, (ack: any) => {
+        console.log('HtWsockets-->[emitEvent ack]: Event acknowledged by server:', ack);
+    });
+
+    return socketInstance;
+};
+
+export const getSocketInstance = async (
+  connectionState: ConnectionState
+): Promise<Socket<DefaultEventsMap, DefaultEventsMap> | null> => {
+    if (!connectionState.isOnline) {
+        alert('Offline Please connect to the internet.');
+        return null;
+    }
+
+    if (!socketInstance) {
+        // Use relative URL when in development to leverage the proxy
+        const serverUrl = process.env.NODE_ENV === 'development' ? '' : ENV.SERVER;
+        console.log('HtWsockets-->[getSocketInstance]: Creating Socket.io connection to', serverUrl || 'proxy (relative URL)');
+        
+        socketInstance = io(serverUrl, {
+            auth: { token: `Bearer ${connectionState.tokenIO}` },
+            transports: ['polling'], // Force polling to work with proxy
+        });
+    }
+
+    return socketInstance;
+};

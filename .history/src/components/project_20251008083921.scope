@@ -1,0 +1,15 @@
+This is a desktop app part of a wider project called "Hike the World" where there are 
+involved three main components. 
+1. Administration Site (htwadmin)
+2. Server Side hosted on a remote Node.js where a Neo4j database is installed and managed by a Nodejs App
+3. Client React Native App (Libre-HtW)
+
+The scope of the project is to build a kind of Google Maps service for outdoors pathways. 
+The path network is stored remotely in a Neo4j database and the Nodejs App which is managing it 
+is responsible to mantain the database and to provide the path network to the React-native app
+along with the navigation info to travel from one destination to another.
+
+The app in this directory, named htwadmin,  is the administration App, which is responsible to create and mantain 
+the Path Network. 
+
+The htwadmin is incomplete, written a couple of years ago and needs an update and to be completed.

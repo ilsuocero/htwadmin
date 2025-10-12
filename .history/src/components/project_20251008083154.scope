@@ -1,0 +1,6 @@
+This is a desktop app part of a wider project where there are involved three main components. 
+1. Administration Site (htwadmin)
+2. Server Side hosted on a remote Node.js where a Neo4j database is installed and managed by a Nodejs App
+3. Client React Native App (Libre-HtW)
+
+The 
