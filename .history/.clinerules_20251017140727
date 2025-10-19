@@ -1,0 +1,29 @@
+# .clinerules
+
+## Code Quality
+- All code must be in English
+- Use TypeScript for new files
+- Follow ESLint configuration
+- Add JSDoc comments for functions
+- Use functional components with hooks
+
+## Architecture
+- Use React hooks (useState, useEffect, etc.)
+- Keep components under 200 lines
+- Separate business logic into custom hooks
+- Use named exports (not default exports)
+
+## Testing
+- Add unit tests for all utilities
+- Test error handling paths
+- Mock API calls in tests
+
+## Security
+- Never commit API keys
+- Sanitize all user inputs
+- Use environment variables for sensitive data
+
+## React Patterns
+- Use controlled components for forms
+- Implement proper error boundaries
+- Use React.memo for expensive renders

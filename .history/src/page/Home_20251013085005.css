@@ -1,0 +1,21 @@
+.home {
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.home > * {
+    flex-shrink: 0;
+}
+
+.home > :last-child {
+    flex-grow: 1;
+    min-height: 0; /* Allow map container to shrink */
+}
+
+.map-container {
+    flex: 1;
+    min-height: 400px;
+    position: relative;

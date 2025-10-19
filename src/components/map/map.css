@@ -1,0 +1,55 @@
+.map-wrap {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 77px);
+    /* calculate height of the screen minus the heading */
+}
+
+.map {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.custom-context-menu {
+    background: white;
+    padding: 8px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+}
+
+.menu-entry {
+    margin-bottom: 4px;
+}
+
+.custom-dialog {
+    width: 400px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+}
+
+.dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.dialog-header h2 {
+    margin: 0;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    color: #333;
+    cursor: pointer;
+}
+
+.dialog-content {
+    font-size: 14px;
+}

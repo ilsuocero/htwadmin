@@ -1,0 +1,205 @@
+# Tech Context - htwadmin
+
+## Technologies Used
+
+### Core Framework
+- **React 18.2.0**: Modern React with hooks and concurrent features
+- **TypeScript 5.9.3**: Gradual TypeScript adoption with existing JavaScript
+- **Create React App**: Standard React toolchain with custom configuration
+
+### UI & Styling
+- **Material-UI (MUI) 7.3.4**: Comprehensive component library
+- **@emotion/react/styled**: CSS-in-JS styling solution
+- **CSS Modules**: Component-specific styling
+
+### Real-time Communication
+- **Socket.io-client 4.8.1**: Real-time bidirectional communication
+- **Single Instance Architecture**: Centralized socket management
+
+### Authentication & Security
+- **Firebase 12.3.0**: User authentication and management
+- **JWT Tokens**: Secure socket connection authentication
+- **React Firebase Hooks**: Firebase integration utilities
+
+### State Management
+- **@tanstack/react-query 5.90.2**: Server state management and caching
+- **React Context**: Global application state
+- **Custom Hooks**: Specialized state management patterns
+
+### Mapping & Geospatial
+- **MapLibre GL 3.6.2**: Open-source mapping library
+- **@turf/turf 6.5.0**: Geospatial analysis and utilities
+- **GeoJSON**: Standard geospatial data format
+
+### HTTP & API
+- **Axios 1.12.2**: HTTP client for REST API calls
+- **OSRM Service**: Open Source Routing Machine integration
+
+### Development Tools
+- **React Scripts 5.0.1**: Standard CRA build tools
+- **Babel**: JavaScript compilation
+- **ESLint**: Code linting and quality
+- **Testing Library**: Component testing utilities
+
+### Utilities
+- **UUID 9.0.0**: Unique identifier generation
+- **React Router DOM 7.9.3**: Client-side routing
+
+## Development Setup
+
+### Prerequisites
+- **Node.js**: Required for package management and build tools
+- **npm/yarn**: Package manager (both supported)
+- **Git**: Version control system
+
+### Installation & Setup
+```bash
+# Clone repository
+git clone [repository-url]
+cd htwadmin
+
+# Install dependencies
+npm install
+# or
+yarn install
+
+# Start development server
+npm start
+# or
+yarn start
+```
+
+### Build & Deployment
+```bash
+# Build for production
+npm run build
+# or
+yarn build
+
+# Run tests
+npm test
+# or
+yarn test
+```
+
+## Technical Constraints
+
+### Browser Compatibility
+- **Modern Browsers**: Chrome, Firefox, Safari, Edge
+- **ES6+ Support**: Requires modern JavaScript support
+- **WebSocket Support**: Required for real-time features
+
+### Performance Constraints
+- **Map Rendering**: Optimized for desktop with MapLibre GL
+- **Real-time Data**: Efficient socket connection management
+- **Bundle Size**: Careful dependency management for optimal loading
+
+### Security Constraints
+- **Firebase Dependency**: Requires Firebase project configuration
+- **Socket Authentication**: JWT token validation for secure connections
+- **CORS Configuration**: Proper cross-origin resource sharing setup
+
+## Dependencies
+
+### Production Dependencies
+- **@emotion/react**: CSS-in-JS styling
+- **@emotion/styled**: Styled component system
+- **@mui/icons-material**: Material UI icons
+- **@mui/material**: Material UI components
+- **@react-firebase/auth**: Firebase auth integration
+- **@tanstack/react-query**: State management
+- **@turf/turf**: Geospatial utilities
+- **axios**: HTTP client
+- **firebase**: Firebase services
+- **maplibre-gl**: Mapping library
+- **react**: React framework
+- **react-alert**: Notification system
+- **react-dom**: React DOM rendering
+- **react-firebase-hooks**: Firebase React integration
+- **socket.io-client**: Socket.io client
+- **uuid**: Unique ID generation
+
+### Development Dependencies
+- **@types/jest**: Jest TypeScript types
+- **@types/node**: Node.js TypeScript types
+- **@types/react**: React TypeScript types
+- **@types/react-dom**: React DOM TypeScript types
+- **@types/uuid**: UUID TypeScript types
+- **@testing-library/jest-dom**: Jest DOM testing utilities
+- **@testing-library/react**: React testing utilities
+- **@testing-library/user-event**: User interaction testing
+- **react-scripts**: Create React App scripts
+- **typescript**: TypeScript compiler
+- **web-vitals**: Web performance metrics
+
+## Tool Usage Patterns
+
+### Development Workflow
+1. **Start Development**: `npm start` launches development server
+2. **Code Changes**: Hot reloading for immediate feedback
+3. **Testing**: `npm test` runs test suite with watch mode
+4. **Build**: `npm run build` creates production bundle
+5. **Deployment**: Built files deployed to hosting service
+
+### Debugging Patterns
+- **Rocket Logging**: `🚀 Component-->[action]: description` format
+- **Browser DevTools**: React DevTools and network monitoring
+- **Socket Debugging**: Connection state and event monitoring
+- **Error Boundaries**: Graceful error handling and reporting
+
+### Code Quality
+- **ESLint**: Code style and quality enforcement
+- **TypeScript**: Type safety and development experience
+- **Component Testing**: React Testing Library for UI testing
+- **Hook Testing**: Custom hook testing patterns
+
+## Configuration Files
+
+### Package.json
+- **Scripts**: Standard CRA scripts with custom configurations
+- **Dependencies**: Carefully curated production dependencies
+- **Proxy**: Development proxy to backend API
+
+### TypeScript Configuration (tsconfig.json)
+- **Strict Mode**: TypeScript strict type checking
+- **Module Resolution**: Node.js module resolution
+- **JSX Support**: React JSX transformation
+
+### Babel Configuration (babel-config.js)
+- **Preset Configuration**: CRA Babel presets
+- **Custom Transformations**: Additional Babel plugins if needed
+
+## Environment Setup
+
+### Development Environment
+- **Local Development**: `http://localhost:3000`
+- **API Proxy**: Requests proxied to `https://robertomantega.com`
+- **Hot Reloading**: Automatic browser refresh on changes
+
+### Production Environment
+- **Static Hosting**: Built files served from CDN
+- **Environment Variables**: Configuration via build process
+- **Performance Optimization**: Minified and optimized bundles
+
+### Firebase Configuration
+- **Project Setup**: Firebase project with authentication
+- **Environment Variables**: Firebase config in environment files
+- **Security Rules**: Firebase security rules configuration
+
+## Build & Deployment Process
+
+### Development Build
+- **Development Server**: Webpack dev server with hot reload
+- **Source Maps**: Debug-friendly development builds
+- **Fast Refresh**: React Fast Refresh for component updates
+
+### Production Build
+- **Code Splitting**: Optimized chunk splitting
+- **Minification**: JavaScript and CSS minification
+- **Asset Optimization**: Image and font optimization
+- **Bundle Analysis**: Webpack bundle analyzer for optimization
+
+### Deployment Strategy
+- **Static Hosting**: Deploy built files to static hosting service
+- **CDN Distribution**: Content delivery network for global performance
+- **Environment Configuration**: Build-time environment variable injection

@@ -1,0 +1,222 @@
+# System Patterns - htwadmin
+
+## System Architecture
+
+### Three-Tier Architecture
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   htwadmin      │    │   Node.js Server │    │   Neo4j Database │
+│  (React App)    │◄──►│   (Backend)      │◄──►│   (Graph DB)    │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+        │                       │
+        │                       │
+        ▼                       ▼
+┌─────────────────┐    ┌──────────────────┐
+│ Libre-HtW App   │    │   Firebase Auth  │
+│ (React Native)  │    │   (Authentication)│
+└─────────────────┘    └──────────────────┘
+```
+
+### Component Architecture
+```
+App.js
+├── QueryClientProvider (React Query)
+├── AppStateProvider (Context)
+└── Router
+    ├── / → Login
+    ├── /signup → Signup
+    ├── /home → Home (Main Admin Interface)
+    └── /POIedit → POIedit
+
+Home.js (Central Socket Coordinator)
+├── useSocket (Single Instance)
+├── RenderPathNetwork (Props: socketOperations, isConnected)
+├── RenderDestinations (Props: socketOperations, isConnected)
+└── RenderCrossRoads (Props: socketOperations, isConnected)
+```
+
+## Key Technical Decisions
+
+### Socket.io Single Instance Architecture
+**Decision**: Centralized socket management in Home.js only
+**Rationale**: Prevents connection chaos and state confusion
+**Implementation**:
+```javascript
+// Home.js - Only place useSocket is called
+const { socket, isConnected, socketOperations } = useSocket(connectionState);
+
+// Render components receive props, don't call useSocket
+<RenderPathNetwork socketOperations={socketOperations} isConnected={isConnected} />
+```
+
+### Authentication Flow
+**Decision**: Firebase authentication with JWT tokens for socket connections
+**Flow**:
+1. User authenticates via Firebase
+2. JWT token obtained
+3. Socket connection established with token
+4. Token automatically refreshed and socket reconnected
+
+### State Management Strategy
+**React Query**: Server state (paths, destinations, crossroads)
+**React Context**: Global app state (authentication, connection status)
+**Local State**: Component-specific UI state
+
+## Design Patterns in Use
+
+### Custom Hook Patterns
+- **useSocket**: Centralized socket connection management
+- **useEditModeManager**: Map editing state management
+- **useMapBehavior**: Map interaction logic
+- **useSegmentManager**: Path segment operations
+- **useStateTracker**: State change monitoring
+
+### Service Layer Pattern
+```
+src/services/
+├── api.ts (REST API calls)
+├── socketService.js (Socket.io service)
+├── osrmService.ts (Routing service)
+└── queryClient.ts (React Query configuration)
+```
+
+### Component Composition Pattern
+- **Container Components**: Manage state and logic (MapContainer, NavbarContainer)
+- **Presentational Components**: Focus on UI rendering (MapView, Navbar)
+- **Render Components**: Specific data visualization (RenderPathNetwork, etc.)
+
+## Critical Implementation Paths
+
+### Socket Connection Flow
+```
+1. Authentication → Firebase JWT Token
+2. Home.js → useSocket(connectionState)
+3. Socket Service → createSocket(token)
+4. Connection Established → isConnected = true
+5. Render Components → Conditional rendering based on isConnected
+6. Data Operations → socketOperations.emits when connected
+```
+
+### Edit Mode "Father State" Coordination Flow
+```
+1. Mode Change → currentMode updated (from global state)
+2. Set pendingModeSetup = true
+3. Monitor layer availability (sentieri, destinazioni, incroci)
+4. When ALL layers available AND pendingModeSetup = true:
+   - Clear existing event handlers
+   - Set up new event handlers for current mode
+   - Set publicCurrentMode for components to use
+   - Clear pendingModeSetup = false
+5. Components use publicCurrentMode for edit logic
+```
+
+### Data Loading Sequence
+```
+1. User authenticates and navigates to /home
+2. Socket connection established
+3. Components render conditionally (isConnected === true)
+4. useEffect hooks trigger data requests
+5. Socket emits: listaSentieri, listaDestinazioni, listCrossRoads
+6. Server responds: printSentieri, printDestinazioni, printCrossRoads
+7. Data displayed in respective components
+```
+
+### Error Recovery Path
+```
+1. Connection lost → isConnected = false
+2. Automatic reconnection attempts
+3. User sees connection status indicator
+4. Reconnection successful → isConnected = true
+5. Data automatically reloaded
+6. User continues work seamlessly
+```
+
+## Component Relationships
+
+### Map System Components
+```
+MapContainer (State Manager)
+├── MapView (Rendering)
+├── useMapBehavior (Interactions)
+├── useEditModeManager (Editing)
+└── useSegmentManager (Path Operations)
+```
+
+### Navigation Components
+```
+NavbarContainer (State)
+└── Navbar (UI)
+```
+
+### Data Render Components
+```
+Home.js (Parent)
+├── RenderPathNetwork (Path visualization)
+├── RenderDestinations (Destination points)
+└── RenderCrossRoads (Intersection points)
+```
+
+## Data Flow Patterns
+
+### Real-time Data Flow
+```
+Server Event → Socket Service → useSocket Hook → Home.js → Render Components
+```
+
+### User Action Flow
+```
+User Interaction → Component → Socket Operation → Server → Response → UI Update
+```
+
+### State Update Flow
+```
+Server Data → React Query Cache → Component Re-render → UI Update
+```
+
+## Performance Considerations
+
+### Socket Optimization
+- **Single Instance**: Reduces resource usage
+- **Event Debouncing**: Prevents excessive server requests
+- **Connection Pooling**: Efficient socket management
+- **Memory Cleanup**: Proper disconnect handling
+
+### Map Performance
+- **Layer Management**: Efficient map layer rendering
+- **Data Batching**: Grouped updates for multiple features
+- **Viewport Optimization**: Load data only for visible area
+- **Caching Strategy**: React Query for data caching
+
+### Component Optimization
+- **Memoization**: React.memo for expensive components
+- **Conditional Rendering**: Only render when data available
+- **Lazy Loading**: Code splitting for large components
+- **Event Optimization**: Debounced user interactions
+
+## Security Patterns
+
+### Authentication
+- **Firebase Integration**: Secure user management
+- **JWT Tokens**: Stateless authentication for sockets
+- **Token Refresh**: Automatic token renewal
+- **Protected Routes**: Authentication-required access
+
+### Socket Security
+- **Token Validation**: Server-side JWT verification
+- **Event Authorization**: Role-based event permissions
+- **Input Validation**: Server-side data validation
+- **Connection Limits**: Rate limiting and connection management
+
+## Testing Patterns
+
+### Unit Testing Strategy
+- **Component Testing**: React Testing Library
+- **Hook Testing**: Custom hook testing utilities
+- **Service Testing**: Mocked API and socket services
+- **Utility Testing**: Pure function testing
+
+### Integration Testing
+- **Socket Integration**: Mock socket server testing
+- **Authentication Flow**: End-to-end authentication testing
+- **Data Flow**: Complete data loading and update cycles
+- **Error Scenarios**: Connection loss and recovery testing
