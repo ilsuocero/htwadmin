@@ -40,118 +40,49 @@ export const useEditModeManager = (getMap) => {
     }, []);
 
     // Core edit mode functions defined before event handlers to fix hoisting
-    const updateTemporarySources = useCallback((map, points) => {
-        // Update temporary point source
-        const tempPointSource = map.getSource('tempPointSource');
-        if (tempPointSource) {
-            const tempPointData = {
-                type: 'FeatureCollection',
-                features: points,
-            };
-            tempPointSource.setData(tempPointData);
-        }
-
-        // Update temporary line source
-        const tempLineSource = map.getSource('tempLineSource');
-        if (tempLineSource) {
-            const lineStringFeature = {
-                type: 'Feature',
-                geometry: {
-                    type: 'LineString',
-                    coordinates: points.map(point => point.geometry.coordinates),
-                },
-                properties: {},
-            };
-            tempLineSource.setData(lineStringFeature);
-        }
-    }, []);
+    // Note: updateTemporarySources removed - using direct approach like backup
 
     const handleEditModeClick = useCallback((e) => {
         console.log('🎯 EDIT MODE MANAGER: Edit mode click at:', e.lngLat);
-        console.log('🎯 EDIT MODE MANAGER: Click features:', e.features?.length || 0);
+        console.log('🎯 EDIT MODE MANAGER: snapCrossRef.current:', snapCrossRef.current);
+        console.log('🎯 EDIT MODE MANAGER: snap1.current:', snap1.current);
+        console.log('🎯 EDIT MODE MANAGER: snap2.current:', snap2.current);
 
         const map = getMap();
         if (!map) return;
 
-        const clickedFeatures = e.features || [];
-
-        if (clickedFeatures.length > 0) {
-            // We clicked on a feature (crossroad/destination)
-            const feature = clickedFeatures[0];
-            const layerId = feature.source;
-
-            if (layerId === 'destinazioni' || layerId === 'incroci') {
-                const featureId = feature.properties.id;
-                const clickedCoordinates = feature.geometry.coordinates;
-                console.log('🎯 EDIT MODE MANAGER: Clicking on feature:', featureId, clickedCoordinates);
-
-                // Store the snap coordinates
-                if (isFirstClickRef.current) {
-                    console.log('🎯 EDIT MODE MANAGER: First snap to feature');
-                    dispatch({
-                        type: 'SET_EDIT_MODE_SNAP1',
-                        payload: { clickedCoords: clickedCoordinates, featureId, featureType: layerId }
-                    });
-                    isFirstClickRef.current = false;
-                } else {
-                    console.log('🎯 EDIT MODE MANAGER: Second snap to feature');
-                    dispatch({
-                        type: 'SET_EDIT_MODE_SNAP2',
-                        payload: { clickedCoords: clickedCoordinates, featureId, featureType: layerId }
-                    });
-
-                    // Show completion popup when both endpoints are snapped
-                    setTimeout(() => {
-                        const confirmed = window.confirm('Segment completed!\n\nClick "Save" to save the segment or "Continue" to keep editing.');
-                        if (confirmed) {
-                            // User clicked Save - show the PathForm
-                            dispatch({
-                                type: 'SHOW_PATH_FORM',
-                                payload: {
-                                    coordinates: tempPointsRef.current.map(point => point.geometry.coordinates),
-                                    snap1: state.editMode.snap1,
-                                    snap2: state.editMode.snap2
-                                }
-                            });
-                        } else {
-                            // User clicked Continue - stay in edit mode
-                            console.log('User chose to continue editing');
-                        }
-                    }, 100);
-                }
-
-                // Add the snapped point to our temporary points
-                const clickedPoint = {
-                    type: 'Feature',
-                    geometry: {
-                        type: 'Point',
-                        coordinates: clickedCoordinates,
-                    },
-                    properties: {},
-                };
-
-                tempPointsRef.current.push(clickedPoint);
-
-                // Update temporary sources
-                updateTemporarySources(map, tempPointsRef.current);
-
-                // Update global state with coordinates
-                const coordinates = tempPointsRef.current.map(point => point.geometry.coordinates);
-                dispatch({ type: 'SET_EDIT_MODE_COORDINATES', payload: coordinates });
-
-                return; // Exit early since we handled a feature click
-            }
-        }
-
-        // If we get here, we clicked on empty map (no features)
-        if (isFirstClickRef.current) {
-            // First click must be on a crossroad/destination
-            alert('You must start from a destination or a crossroad. \nWarning: before creating the segment check if both \nendpoints ( )<-segment->( ) are in place.');
+        // Check if segment is already completed (like backup)
+        if (snap1.current && snap2.current) {
+            alert('You already concluded the segment. \n Save it or Quit. \n To continue to edit, cancel one or some sub-segment.');
             return;
         }
 
-        // Add intermediate point on empty map
-        const clickedCoords = [e.lngLat.lng, e.lngLat.lat];
+        let clickedCoords = [e.lngLat.lng, e.lngLat.lat];
+
+        // Check if we're hovering over a feature (like backup implementation)
+        if (snapCrossRef.current) {
+            const { clickedCoordinates, featureId } = snapCrossRef.current;
+            console.log('🎯 EDIT MODE MANAGER: Snapping to feature:', featureId, clickedCoordinates);
+            clickedCoords = clickedCoordinates;
+
+            // Store the snap coordinates in local refs (like backup)
+            if (!snap1.current) {
+                console.log('🎯 EDIT MODE MANAGER: FIRST SNAP');
+                snap1.current = { clickedCoords, featureId };
+            } else {
+                console.log('🎯 EDIT MODE MANAGER: SECOND SNAP');
+                snap2.current = { clickedCoords, featureId };
+            }
+        } else {
+            // If we get here, we clicked on empty map (no features)
+            if (!snap1.current) {
+                // First click must be on a crossroad/destination (like backup)
+                alert('You must start from a destination or a crossroad. \nWarning: before creating the segment check if both \nendpoints ( )<-segment->( ) are in place.');
+                return;
+            }
+        }
+
+        // Add the point to our temporary points (both snapped and intermediate points)
         const clickedPoint = {
             type: 'Feature',
             geometry: {
@@ -162,13 +93,48 @@ export const useEditModeManager = (getMap) => {
         };
 
         tempPointsRef.current.push(clickedPoint);
-        updateTemporarySources(map, tempPointsRef.current);
 
-        // Update global state with coordinates
-        const coordinates = tempPointsRef.current.map(point => point.geometry.coordinates);
-        dispatch({ type: 'SET_EDIT_MODE_COORDINATES', payload: coordinates });
+        // Update temporary sources (like backup)
+        const tempPointSource = map.getSource('tempPointSource');
+        const tempPointData = tempPointSource._data;
+        tempPointData.features.push(clickedPoint);
+        tempPointSource.setData(tempPointData);
 
-    }, [dispatch, state.editMode.snap1, state.editMode.snap2, updateTemporarySources]);
+        // Update the line feature based on the new points (like backup)
+        const lineStringFeature = {
+            type: 'Feature',
+            geometry: {
+                type: 'LineString',
+                coordinates: tempPointData.features.map((point) => point.geometry.coordinates),
+            },
+            properties: {},
+        };
+
+        const tempLineSource = map.getSource('tempLineSource');
+        tempLineSource.setData(lineStringFeature);
+
+        // Show completion popup when both endpoints are snapped (like backup)
+        if (snap1.current && snap2.current) {
+            setTimeout(() => {
+                const confirmed = window.confirm('Segment completed!\n\nClick "Save" to save the segment or "Continue" to keep editing.');
+                if (confirmed) {
+                    // User clicked Save - show the PathForm
+                    dispatch({
+                        type: 'SHOW_PATH_FORM',
+                        payload: {
+                            coordinates: tempPointData.features.map(point => point.geometry.coordinates),
+                            snap1: snap1.current,
+                            snap2: snap2.current
+                        }
+                    });
+                } else {
+                    // User clicked Continue - stay in edit mode
+                    console.log('User chose to continue editing');
+                }
+            }, 100);
+        }
+
+    }, [dispatch]);
 
     // All event handlers defined after core functions to fix hoisting issues
     const handleMapClick = useCallback((e) => {
@@ -215,9 +181,12 @@ export const useEditModeManager = (getMap) => {
     const handleMapMouseMove = useCallback(() => { }, []);
     const handleMapMouseUp = useCallback(() => { }, []);
 
-    // All edit mode state management here
+    // All edit mode state management here - use local refs like backup
     const isFirstClickRef = useRef(true);
     const tempPointsRef = useRef([]);
+    const snapCrossRef = useRef(null); // snap feature reference (like backup)
+    const snap1 = useRef(null); // first snap point (like backup)
+    const snap2 = useRef(null); // second snap point (like backup)
 
     // Event handler refs - father state manages ALL event handlers
     const eventHandlersRef = useRef({
@@ -227,18 +196,11 @@ export const useEditModeManager = (getMap) => {
         mousemove: null,
         mouseup: null,
         mouseenter: {},
-        mouseleave: {},
-        sentieriClickHandler: null
+        mouseleave: {}
     });
 
     // Father state manages ALL event handlers
-    const clearAllEventHandlers = useCallback((forceClear = false) => {
-        // If not forced and we're already in the target mode, skip clearing
-        if (!forceClear && handlersSetupRef.current === currentMode) {
-            console.log('🚀 EDIT MODE MANAGER: Mode unchanged, skipping handler clear');
-            return;
-        }
-
+    const clearAllEventHandlers = useCallback(() => {
         console.log('🚀 EDIT MODE MANAGER: Clearing ALL event handlers');
         const map = getMap();
         if (!map) return;
@@ -276,7 +238,7 @@ export const useEditModeManager = (getMap) => {
         } catch (error) {
             console.warn('🛑 EDIT MODE MANAGER: Error clearing event handlers:', error);
         }
-    }, [getMap, currentMode]);
+    }, [getMap]);
 
     // Setup event handlers based on mode - father state manages ALL events
     const setupEventHandlers = useCallback((mode, handlers = {}) => {
@@ -355,9 +317,16 @@ export const useEditModeManager = (getMap) => {
             // Clean up temporary sources
             cleanupTemporarySources(map);
             map.getCanvas().style.cursor = '';
+            
+            // Reset local refs when exiting EDIT mode (like backup)
+            if (currentMode === 'EDIT') {
+                snap1.current = null;
+                snap2.current = null;
+                snapCrossRef.current = null;
+                console.log('🎯 EDIT MODE MANAGER: Local refs reset on exit');
+            }
         }
     }, [currentMode, getMap, setupEventHandlers, handleMapClick, handleContextMenu, handleMapMouseMove, handleMapMouseUp, handleMapMouseDown]);
-
 
     const initializeTemporarySources = (map) => {
         // Create temporary sources and layers if they don't exist
@@ -440,30 +409,67 @@ export const useEditModeManager = (getMap) => {
             if (map.getSource('sentieri')) {
                 console.log('🎯 EDIT MODE MANAGER: Setting mouse event for sentieri');
 
-                // Only set up segment click handler if not already set up
-                if (!eventHandlersRef.current.sentieriClickHandler) {
-                    // Remove ALL click handlers for sentieri first to prevent duplication
-                    map.off('click', 'sentieri');
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Removed all existing segment click handlers');
-
-                    // Segment click handler
-                    const sentieriClickHandler = (e) => {
-                        console.log('🎯 🎯 EDIT MODE MANAGER: click on sentieri');
-                        const feature = e.features?.[0];
-                        if (feature) {
-                            console.log('🎯 🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
-                            const description = feature.properties?.Nome || 'Unnamed segment';
-                            alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
-                        }
-                    };
-
-                    map.on('click', 'sentieri', sentieriClickHandler);
-                    eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler added');
-                } else {
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler already exists, skipping');
+                // Always remove existing click handler first to prevent duplication
+                if (eventHandlersRef.current.sentieriClickHandler) {
+                    map.off('click', 'sentieri', eventHandlersRef.current.sentieriClickHandler);
+                    console.log('🎯 EDIT MODE MANAGER: Removed existing segment click handler');
                 }
 
+                // Segment click handler - store it in ref to prevent duplication
+                const sentieriClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on sentieri');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
+                        const description = feature.properties?.Nome || 'Unnamed segment';
+                        alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
+                    }
+                };
+
+                map.on('click', 'sentieri', sentieriClickHandler);
+                eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
+                console.log('🎯 EDIT MODE MANAGER: Segment click handler added');
+
+                // Destination click handler - show CrossRoadForm for editing
+                const destinazioniClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on destinazioni');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Destination clicked:', feature.properties);
+                        dispatch({
+                            type: 'SHOW_CROSSROAD_FORM',
+                            payload: {
+                                feature: { current: feature }, // Wrap in ref-like structure
+                                coordinates: e.lngLat,
+                                featureType: 'destinazione'
+                            }
+                        });
+                    }
+                };
+
+                // Crossroad click handler - show CrossRoadForm for editing
+                const incrociClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on incroci');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Crossroad clicked:', feature.properties);
+                        dispatch({
+                            type: 'SHOW_CROSSROAD_FORM',
+                            payload: {
+                                feature: { current: feature }, // Wrap in ref-like structure
+                                coordinates: e.lngLat,
+                                featureType: 'incrocio'
+                            }
+                        });
+                    }
+                };
+
+                // Set up destination and crossroad click handlers
+                map.on('click', 'destinazioni', destinazioniClickHandler);
+                map.on('click', 'incroci', incrociClickHandler);
+                eventHandlersRef.current.destinazioniClickHandler = destinazioniClickHandler;
+                eventHandlersRef.current.incrociClickHandler = incrociClickHandler;
+                console.log('🎯 EDIT MODE MANAGER: Destination and crossroad click handlers added');
 
                 // Hover behavior for sentieri (segments)
                 // Always remove existing hover handlers first to prevent duplication
@@ -497,43 +503,39 @@ export const useEditModeManager = (getMap) => {
                     eventHandlersRef.current.mousedown = handlers.mousedown;
                 }
 
-                // Destination click handler - show CrossRoadForm for editing
-                const destinazioniClickHandler = (e) => {
-                    console.log('🎯 EDIT MODE MANAGER: click on destinazioni');
-                    const feature = e.features?.[0];
-                    if (feature) {
-                        console.log('🎯 EDIT MODE MANAGER: Destination clicked:', feature.properties);
-                        dispatch({
-                            type: 'SHOW_CROSSROAD_FORM',
-                            payload: {
-                                feature: { current: feature }, // Wrap in ref-like structure
-                                coordinates: e.lngLat,
-                                featureType: 'destinazione'
-                            }
-                        });
-                    }
-                };
-
-                // Set up destination click handler
-                map.on('click', 'destinazioni', destinazioniClickHandler);
-                eventHandlersRef.current.destinazioniClickHandler = destinazioniClickHandler;
-                console.log('🎯 EDIT MODE MANAGER: Destination click handler added');
-
-                // Hover behavior for destinazioni (destinations)
+                // Hover behavior for destinazioni (destinations) - like backup
                 map.on('mouseenter', 'destinazioni', (e) => {
                     const featureId = e.features[0].properties.id;
-                    map.setPaintProperty('destinazioni', 'circle-color', [
-                        'case',
-                        ['==', ['get', 'id'], featureId],
-                        ENV.DESTINATION_OVER, // Hover color
-                        ENV.DESTINATION // Default color
-                    ]);
-                    map.getCanvas().style.cursor = 'pointer';
+                    
+                    // Check if we're in EDIT mode (like backup)
+                    if (publicCurrentMode === 'EDIT') {
+                        // Get the coordinates of the entered feature for snapping
+                        const clickedCoordinates = e.features[0].geometry.coordinates;
+                        snapCrossRef.current = { clickedCoordinates, featureId };
+                        map.getCanvas().style.cursor = 'pointer';
+                    } else {
+                        // NORMAL mode - visual hover effects
+                        map.setPaintProperty('destinazioni', 'circle-color', [
+                            'case',
+                            ['==', ['get', 'id'], featureId],
+                            ENV.DESTINATION_OVER, // Hover color
+                            ENV.DESTINATION // Default color
+                        ]);
+                        map.getCanvas().style.cursor = 'pointer';
+                    }
                 });
 
                 map.on('mouseleave', 'destinazioni', () => {
-                    map.setPaintProperty('destinazioni', 'circle-color', ENV.DESTINATION);
-                    map.getCanvas().style.cursor = '';
+                    // Clear snap reference (like backup)
+                    snapCrossRef.current = null;
+                    
+                    if (publicCurrentMode === 'EDIT') {
+                        map.getCanvas().style.cursor = 'crosshair';
+                    } else {
+                        // NORMAL mode - reset visual effects
+                        map.setPaintProperty('destinazioni', 'circle-color', ENV.DESTINATION);
+                        map.getCanvas().style.cursor = '';
+                    }
                 });
 
                 // Ensure destination paint properties are set to static values (hover is handled by event handlers)
@@ -549,43 +551,39 @@ export const useEditModeManager = (getMap) => {
                     eventHandlersRef.current.mousedown = handlers.mousedown;
                 }
 
-                // Crossroad click handler - show CrossRoadForm for editing
-                const incrociClickHandler = (e) => {
-                    console.log('🎯 EDIT MODE MANAGER: click on incroci');
-                    const feature = e.features?.[0];
-                    if (feature) {
-                        console.log('🎯 EDIT MODE MANAGER: Crossroad clicked:', feature.properties);
-                        dispatch({
-                            type: 'SHOW_CROSSROAD_FORM',
-                            payload: {
-                                feature: { current: feature }, // Wrap in ref-like structure
-                                coordinates: e.lngLat,
-                                featureType: 'incrocio'
-                            }
-                        });
-                    }
-                };
-
-                // Set up crossroad click handler
-                map.on('click', 'incroci', incrociClickHandler);
-                eventHandlersRef.current.incrociClickHandler = incrociClickHandler;
-                console.log('🎯 EDIT MODE MANAGER: Crossroad click handler added');
-
-                // Hover behavior for incroci (crossroads)
+                // Hover behavior for incroci (crossroads) - like backup
                 map.on('mouseenter', 'incroci', (e) => {
                     const featureId = e.features[0].properties.id;
-                    map.setPaintProperty('incroci', 'circle-color', [
-                        'case',
-                        ['==', ['get', 'id'], featureId],
-                        ENV.CROSSROADS_OVER, // Hover color
-                        ENV.CROSSROADS // Default color
-                    ]);
-                    map.getCanvas().style.cursor = 'pointer';
+                    
+                    // Check if we're in EDIT mode (like backup)
+                    if (publicCurrentMode === 'EDIT') {
+                        // Get the coordinates of the entered feature for snapping
+                        const clickedCoordinates = e.features[0].geometry.coordinates;
+                        snapCrossRef.current = { clickedCoordinates, featureId };
+                        map.getCanvas().style.cursor = 'pointer';
+                    } else {
+                        // NORMAL mode - visual hover effects
+                        map.setPaintProperty('incroci', 'circle-color', [
+                            'case',
+                            ['==', ['get', 'id'], featureId],
+                            ENV.CROSSROADS_OVER, // Hover color
+                            ENV.CROSSROADS // Default color
+                        ]);
+                        map.getCanvas().style.cursor = 'pointer';
+                    }
                 });
 
                 map.on('mouseleave', 'incroci', () => {
-                    map.setPaintProperty('incroci', 'circle-color', ENV.CROSSROADS);
-                    map.getCanvas().style.cursor = '';
+                    // Clear snap reference (like backup)
+                    snapCrossRef.current = null;
+                    
+                    if (publicCurrentMode === 'EDIT') {
+                        map.getCanvas().style.cursor = 'crosshair';
+                    } else {
+                        // NORMAL mode - reset visual effects
+                        map.setPaintProperty('incroci', 'circle-color', ENV.CROSSROADS);
+                        map.getCanvas().style.cursor = '';
+                    }
                 });
 
                 // Ensure crossroad paint properties are set to static values (hover is handled by event handlers)
@@ -608,28 +606,39 @@ export const useEditModeManager = (getMap) => {
         try {
             map.getCanvas().style.cursor = 'crosshair';
 
-            // Use layer-specific click handlers ONLY for edit mode
+            // COMPLETELY REMOVE ALL existing click handlers first
+            if (map.getLayer('destinazioni')) {
+                map.off('click', 'destinazioni');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - removed existing destinazioni click handlers');
+            }
+            if (map.getLayer('incroci')) {
+                map.off('click', 'incroci');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - removed existing incroci click handlers');
+            }
+
+            // Use ONLY global click handler for edit mode (like backup implementation)
+            // DO NOT add layer-specific click handlers for destinations/crossroads in edit mode
             if (handlers.click) {
-                // Add layer-specific handlers for crossroads/destinations
-                if (map.getLayer('destinazioni')) {
-                    map.on('click', 'destinazioni', handlers.click);
-                    console.log('🎯 EDIT MODE MANAGER: Edit mode - destinazioni click handler added');
-                }
-                if (map.getLayer('incroci')) {
-                    map.on('click', 'incroci', handlers.click);
-                    console.log('🎯 EDIT MODE MANAGER: Edit mode - incroci click handler added');
-                }
-                // Add global click for intermediate points (empty map areas)
+                // Add global click for ALL clicks (features and empty map areas)
+                // The handleEditModeClick function will handle feature detection internally
                 map.on('click', handlers.click);
-                console.log('🎯 EDIT MODE MANAGER: Edit mode - global click handler added');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - global click handler added (NO layer-specific handlers)');
             }
 
             // COMPLETELY DISABLE segment interactions in edit mode
             if (map.getLayer('sentieri')) {
-                // Remove ALL segment event handlers
+                // Remove ALL segment event handlers including hover
                 map.off('click', 'sentieri');
                 map.off('mouseenter', 'sentieri');
                 map.off('mouseleave', 'sentieri');
+                
+                // Also remove any existing hover handlers from the ref
+                if (eventHandlersRef.current.mouseenter.sentieri) {
+                    map.off('mouseenter', 'sentieri', eventHandlersRef.current.mouseenter.sentieri);
+                }
+                if (eventHandlersRef.current.mouseleave.sentieri) {
+                    map.off('mouseleave', 'sentieri', eventHandlersRef.current.mouseleave.sentieri);
+                }
 
                 // Disable visual hover effects by setting paint properties to static values
                 // This prevents any dynamic hover behavior
@@ -637,13 +646,58 @@ export const useEditModeManager = (getMap) => {
                 console.log('🎯 EDIT MODE MANAGER: Edit mode - ALL segment interactions removed and visual effects disabled');
             }
 
-            // Also disable destination and crossroad hover effects in edit mode
+            // ENABLE hover-based feature detection for destinations and crossroads in edit mode (like backup)
+            // This is how the backup detects features for snapping
             if (map.getLayer('destinazioni')) {
-                map.setPaintProperty('destinazioni', 'circle-color', ENV.DESTINATION || '#0000ff');
+                // Remove existing hover handlers first
+                map.off('mouseenter', 'destinazioni');
+                map.off('mouseleave', 'destinazioni');
+                
+                // Add hover handlers for feature detection (like backup)
+                map.on('mouseenter', 'destinazioni', (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: Mouse enter destinazioni for snapping');
+                    const featureId = e.features[0].properties.id;
+                    const clickedCoordinates = e.features[0].geometry.coordinates;
+                    snapCrossRef.current = { clickedCoordinates, featureId };
+                    
+                    // Visual feedback for snapping (like backup) - NO visual change in EDIT mode
+                    // The backup doesn't change appearance in EDIT mode, only sets snapCrossRef
+                    map.getCanvas().style.cursor = 'pointer';
+                });
+
+                map.on('mouseleave', 'destinazioni', () => {
+                    console.log('🎯 EDIT MODE MANAGER: Mouse leave destinazioni - clearing snap');
+                    snapCrossRef.current = null;
+                    map.getCanvas().style.cursor = 'crosshair';
+                });
+                
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - destinazioni hover detection enabled (no visual change)');
             }
 
             if (map.getLayer('incroci')) {
-                map.setPaintProperty('incroci', 'circle-color', ENV.CROSSROADS || '#ff0000');
+                // Remove existing hover handlers first
+                map.off('mouseenter', 'incroci');
+                map.off('mouseleave', 'incroci');
+                
+                // Add hover handlers for feature detection (like backup)
+                map.on('mouseenter', 'incroci', (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: Mouse enter incroci for snapping');
+                    const featureId = e.features[0].properties.id;
+                    const clickedCoordinates = e.features[0].geometry.coordinates;
+                    snapCrossRef.current = { clickedCoordinates, featureId };
+                    
+                    // Visual feedback for snapping (like backup) - NO visual change in EDIT mode
+                    // The backup doesn't change appearance in EDIT mode, only sets snapCrossRef
+                    map.getCanvas().style.cursor = 'pointer';
+                });
+
+                map.on('mouseleave', 'incroci', () => {
+                    console.log('🎯 EDIT MODE MANAGER: Mouse leave incroci - clearing snap');
+                    snapCrossRef.current = null;
+                    map.getCanvas().style.cursor = 'crosshair';
+                });
+                
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - incroci hover detection enabled (no visual change)');
             }
         } catch (error) {
             console.error('EDIT MODE MANAGER: Error setting up edit handlers:', error);
@@ -771,7 +825,6 @@ export const useEditModeManager = (getMap) => {
         // Actions
         handleEditModeClick,
         cancelEditing,
-        updateTemporarySources,
 
         // Enhanced event handlers for MapContainer
         handleMapClick,

@@ -510,4 +510,3 @@ if (!map.current.getSource('sentieri')) {
 - **No Race Conditions**: ✅ Coordinated effect system prevents duplication
 - **Mode Coordination**: ✅ Smooth transitions between NORMAL and EDIT modes
 
-These patterns represent the core working behaviors that have been successfully replicated in the new implementation structure. The critical blocking issues have been resolved and the application now provides a stable user experience for core map interactions.

@@ -227,18 +227,11 @@ export const useEditModeManager = (getMap) => {
         mousemove: null,
         mouseup: null,
         mouseenter: {},
-        mouseleave: {},
-        sentieriClickHandler: null
+        mouseleave: {}
     });
 
     // Father state manages ALL event handlers
-    const clearAllEventHandlers = useCallback((forceClear = false) => {
-        // If not forced and we're already in the target mode, skip clearing
-        if (!forceClear && handlersSetupRef.current === currentMode) {
-            console.log('🚀 EDIT MODE MANAGER: Mode unchanged, skipping handler clear');
-            return;
-        }
-
+    const clearAllEventHandlers = useCallback(() => {
         console.log('🚀 EDIT MODE MANAGER: Clearing ALL event handlers');
         const map = getMap();
         if (!map) return;
@@ -276,7 +269,7 @@ export const useEditModeManager = (getMap) => {
         } catch (error) {
             console.warn('🛑 EDIT MODE MANAGER: Error clearing event handlers:', error);
         }
-    }, [getMap, currentMode]);
+    }, [getMap]);
 
     // Setup event handlers based on mode - father state manages ALL events
     const setupEventHandlers = useCallback((mode, handlers = {}) => {
@@ -357,7 +350,6 @@ export const useEditModeManager = (getMap) => {
             map.getCanvas().style.cursor = '';
         }
     }, [currentMode, getMap, setupEventHandlers, handleMapClick, handleContextMenu, handleMapMouseMove, handleMapMouseUp, handleMapMouseDown]);
-
 
     const initializeTemporarySources = (map) => {
         // Create temporary sources and layers if they don't exist
@@ -440,29 +432,26 @@ export const useEditModeManager = (getMap) => {
             if (map.getSource('sentieri')) {
                 console.log('🎯 EDIT MODE MANAGER: Setting mouse event for sentieri');
 
-                // Only set up segment click handler if not already set up
-                if (!eventHandlersRef.current.sentieriClickHandler) {
-                    // Remove ALL click handlers for sentieri first to prevent duplication
-                    map.off('click', 'sentieri');
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Removed all existing segment click handlers');
-
-                    // Segment click handler
-                    const sentieriClickHandler = (e) => {
-                        console.log('🎯 🎯 EDIT MODE MANAGER: click on sentieri');
-                        const feature = e.features?.[0];
-                        if (feature) {
-                            console.log('🎯 🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
-                            const description = feature.properties?.Nome || 'Unnamed segment';
-                            alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
-                        }
-                    };
-
-                    map.on('click', 'sentieri', sentieriClickHandler);
-                    eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler added');
-                } else {
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler already exists, skipping');
+                // Always remove existing click handler first to prevent duplication
+                if (eventHandlersRef.current.sentieriClickHandler) {
+                    map.off('click', 'sentieri', eventHandlersRef.current.sentieriClickHandler);
+                    console.log('🎯 EDIT MODE MANAGER: Removed existing segment click handler');
                 }
+
+                // Segment click handler - store it in ref to prevent duplication
+                const sentieriClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on sentieri');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
+                        const description = feature.properties?.Nome || 'Unnamed segment';
+                        alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
+                    }
+                };
+
+                map.on('click', 'sentieri', sentieriClickHandler);
+                eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
+                console.log('🎯 EDIT MODE MANAGER: Segment click handler added');
 
 
                 // Hover behavior for sentieri (segments)
@@ -492,6 +481,11 @@ export const useEditModeManager = (getMap) => {
             if (map.getLayer('destinazioni')) {
                 console.log('🎯 EDIT MODE MANAGER: Setting mouse event for destinazioni');
 
+                // Always remove existing click handler first to prevent duplication
+                if (eventHandlersRef.current.sentieriClickHandler) {
+                    map.off('click', 'sentieri', eventHandlersRef.current.sentieriClickHandler);
+                    console.log('🎯 EDIT MODE MANAGER: Removed existing segment click handler');
+                }
                 if (handlers.mousedown) {
                     map.on('mousedown', 'destinazioni', handlers.mousedown);
                     eventHandlersRef.current.mousedown = handlers.mousedown;

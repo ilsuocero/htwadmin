@@ -227,18 +227,11 @@ export const useEditModeManager = (getMap) => {
         mousemove: null,
         mouseup: null,
         mouseenter: {},
-        mouseleave: {},
-        sentieriClickHandler: null
+        mouseleave: {}
     });
 
     // Father state manages ALL event handlers
-    const clearAllEventHandlers = useCallback((forceClear = false) => {
-        // If not forced and we're already in the target mode, skip clearing
-        if (!forceClear && handlersSetupRef.current === currentMode) {
-            console.log('🚀 EDIT MODE MANAGER: Mode unchanged, skipping handler clear');
-            return;
-        }
-
+    const clearAllEventHandlers = useCallback(() => {
         console.log('🚀 EDIT MODE MANAGER: Clearing ALL event handlers');
         const map = getMap();
         if (!map) return;
@@ -276,7 +269,7 @@ export const useEditModeManager = (getMap) => {
         } catch (error) {
             console.warn('🛑 EDIT MODE MANAGER: Error clearing event handlers:', error);
         }
-    }, [getMap, currentMode]);
+    }, [getMap]);
 
     // Setup event handlers based on mode - father state manages ALL events
     const setupEventHandlers = useCallback((mode, handlers = {}) => {
@@ -357,7 +350,6 @@ export const useEditModeManager = (getMap) => {
             map.getCanvas().style.cursor = '';
         }
     }, [currentMode, getMap, setupEventHandlers, handleMapClick, handleContextMenu, handleMapMouseMove, handleMapMouseUp, handleMapMouseDown]);
-
 
     const initializeTemporarySources = (map) => {
         // Create temporary sources and layers if they don't exist
@@ -440,30 +432,67 @@ export const useEditModeManager = (getMap) => {
             if (map.getSource('sentieri')) {
                 console.log('🎯 EDIT MODE MANAGER: Setting mouse event for sentieri');
 
-                // Only set up segment click handler if not already set up
-                if (!eventHandlersRef.current.sentieriClickHandler) {
-                    // Remove ALL click handlers for sentieri first to prevent duplication
-                    map.off('click', 'sentieri');
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Removed all existing segment click handlers');
-
-                    // Segment click handler
-                    const sentieriClickHandler = (e) => {
-                        console.log('🎯 🎯 EDIT MODE MANAGER: click on sentieri');
-                        const feature = e.features?.[0];
-                        if (feature) {
-                            console.log('🎯 🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
-                            const description = feature.properties?.Nome || 'Unnamed segment';
-                            alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
-                        }
-                    };
-
-                    map.on('click', 'sentieri', sentieriClickHandler);
-                    eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler added');
-                } else {
-                    console.log('🎯 🎯 EDIT MODE MANAGER: Segment click handler already exists, skipping');
+                // Always remove existing click handler first to prevent duplication
+                if (eventHandlersRef.current.sentieriClickHandler) {
+                    map.off('click', 'sentieri', eventHandlersRef.current.sentieriClickHandler);
+                    console.log('🎯 EDIT MODE MANAGER: Removed existing segment click handler');
                 }
 
+                // Segment click handler - store it in ref to prevent duplication
+                const sentieriClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on sentieri');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Segment clicked:', feature.properties);
+                        const description = feature.properties?.Nome || 'Unnamed segment';
+                        alert(`Segment: ${description}\nID: ${feature.properties?.id}`);
+                    }
+                };
+
+                map.on('click', 'sentieri', sentieriClickHandler);
+                eventHandlersRef.current.sentieriClickHandler = sentieriClickHandler;
+                console.log('🎯 EDIT MODE MANAGER: Segment click handler added');
+
+                // Destination click handler - show CrossRoadForm for editing
+                const destinazioniClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on destinazioni');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Destination clicked:', feature.properties);
+                        dispatch({
+                            type: 'SHOW_CROSSROAD_FORM',
+                            payload: {
+                                feature: { current: feature }, // Wrap in ref-like structure
+                                coordinates: e.lngLat,
+                                featureType: 'destinazione'
+                            }
+                        });
+                    }
+                };
+
+                // Crossroad click handler - show CrossRoadForm for editing
+                const incrociClickHandler = (e) => {
+                    console.log('🎯 EDIT MODE MANAGER: click on incroci');
+                    const feature = e.features?.[0];
+                    if (feature) {
+                        console.log('🎯 EDIT MODE MANAGER: Crossroad clicked:', feature.properties);
+                        dispatch({
+                            type: 'SHOW_CROSSROAD_FORM',
+                            payload: {
+                                feature: { current: feature }, // Wrap in ref-like structure
+                                coordinates: e.lngLat,
+                                featureType: 'incrocio'
+                            }
+                        });
+                    }
+                };
+
+                // Set up destination and crossroad click handlers
+                map.on('click', 'destinazioni', destinazioniClickHandler);
+                map.on('click', 'incroci', incrociClickHandler);
+                eventHandlersRef.current.destinazioniClickHandler = destinazioniClickHandler;
+                eventHandlersRef.current.incrociClickHandler = incrociClickHandler;
+                console.log('🎯 EDIT MODE MANAGER: Destination and crossroad click handlers added');
 
                 // Hover behavior for sentieri (segments)
                 // Always remove existing hover handlers first to prevent duplication
@@ -497,28 +526,6 @@ export const useEditModeManager = (getMap) => {
                     eventHandlersRef.current.mousedown = handlers.mousedown;
                 }
 
-                // Destination click handler - show CrossRoadForm for editing
-                const destinazioniClickHandler = (e) => {
-                    console.log('🎯 EDIT MODE MANAGER: click on destinazioni');
-                    const feature = e.features?.[0];
-                    if (feature) {
-                        console.log('🎯 EDIT MODE MANAGER: Destination clicked:', feature.properties);
-                        dispatch({
-                            type: 'SHOW_CROSSROAD_FORM',
-                            payload: {
-                                feature: { current: feature }, // Wrap in ref-like structure
-                                coordinates: e.lngLat,
-                                featureType: 'destinazione'
-                            }
-                        });
-                    }
-                };
-
-                // Set up destination click handler
-                map.on('click', 'destinazioni', destinazioniClickHandler);
-                eventHandlersRef.current.destinazioniClickHandler = destinazioniClickHandler;
-                console.log('🎯 EDIT MODE MANAGER: Destination click handler added');
-
                 // Hover behavior for destinazioni (destinations)
                 map.on('mouseenter', 'destinazioni', (e) => {
                     const featureId = e.features[0].properties.id;
@@ -548,28 +555,6 @@ export const useEditModeManager = (getMap) => {
                     map.on('mousedown', 'incroci', handlers.mousedown);
                     eventHandlersRef.current.mousedown = handlers.mousedown;
                 }
-
-                // Crossroad click handler - show CrossRoadForm for editing
-                const incrociClickHandler = (e) => {
-                    console.log('🎯 EDIT MODE MANAGER: click on incroci');
-                    const feature = e.features?.[0];
-                    if (feature) {
-                        console.log('🎯 EDIT MODE MANAGER: Crossroad clicked:', feature.properties);
-                        dispatch({
-                            type: 'SHOW_CROSSROAD_FORM',
-                            payload: {
-                                feature: { current: feature }, // Wrap in ref-like structure
-                                coordinates: e.lngLat,
-                                featureType: 'incrocio'
-                            }
-                        });
-                    }
-                };
-
-                // Set up crossroad click handler
-                map.on('click', 'incroci', incrociClickHandler);
-                eventHandlersRef.current.incrociClickHandler = incrociClickHandler;
-                console.log('🎯 EDIT MODE MANAGER: Crossroad click handler added');
 
                 // Hover behavior for incroci (crossroads)
                 map.on('mouseenter', 'incroci', (e) => {
@@ -608,6 +593,16 @@ export const useEditModeManager = (getMap) => {
         try {
             map.getCanvas().style.cursor = 'crosshair';
 
+            // COMPLETELY REMOVE ALL existing click handlers first
+            if (map.getLayer('destinazioni')) {
+                map.off('click', 'destinazioni');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - removed existing destinazioni click handlers');
+            }
+            if (map.getLayer('incroci')) {
+                map.off('click', 'incroci');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - removed existing incroci click handlers');
+            }
+
             // Use layer-specific click handlers ONLY for edit mode
             if (handlers.click) {
                 // Add layer-specific handlers for crossroads/destinations
@@ -626,10 +621,18 @@ export const useEditModeManager = (getMap) => {
 
             // COMPLETELY DISABLE segment interactions in edit mode
             if (map.getLayer('sentieri')) {
-                // Remove ALL segment event handlers
+                // Remove ALL segment event handlers including hover
                 map.off('click', 'sentieri');
                 map.off('mouseenter', 'sentieri');
                 map.off('mouseleave', 'sentieri');
+                
+                // Also remove any existing hover handlers from the ref
+                if (eventHandlersRef.current.mouseenter.sentieri) {
+                    map.off('mouseenter', 'sentieri', eventHandlersRef.current.mouseenter.sentieri);
+                }
+                if (eventHandlersRef.current.mouseleave.sentieri) {
+                    map.off('mouseleave', 'sentieri', eventHandlersRef.current.mouseleave.sentieri);
+                }
 
                 // Disable visual hover effects by setting paint properties to static values
                 // This prevents any dynamic hover behavior
@@ -639,33 +642,23 @@ export const useEditModeManager = (getMap) => {
 
             // Also disable destination and crossroad hover effects in edit mode
             if (map.getLayer('destinazioni')) {
+                // Remove hover handlers for destinations
+                map.off('mouseenter', 'destinazioni');
+                map.off('mouseleave', 'destinazioni');
                 map.setPaintProperty('destinazioni', 'circle-color', ENV.DESTINATION || '#0000ff');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - destinazioni hover disabled');
             }
 
             if (map.getLayer('incroci')) {
+                // Remove hover handlers for crossroads
+                map.off('mouseenter', 'incroci');
+                map.off('mouseleave', 'incroci');
                 map.setPaintProperty('incroci', 'circle-color', ENV.CROSSROADS || '#ff0000');
+                console.log('🎯 EDIT MODE MANAGER: Edit mode - incroci hover disabled');
             }
         } catch (error) {
             console.error('EDIT MODE MANAGER: Error setting up edit handlers:', error);
         }
-    }, []);
-
-    // Auto-segment handlers - father state manages ALL events
-    const setupAutoSegmentHandlers = useCallback((map, handlers) => {
-        console.log('🎯 EDIT MODE MANAGER: Setting up AUTO_SEGMENT mode handlers');
-
-        try {
-            map.getCanvas().style.cursor = 'crosshair';
-
-            if (handlers.click) {
-                if (map.getLayer('destinazioni')) {
-                    map.on('click', 'destinazioni', handlers.click);
-                }
-                if (map.getLayer('incroci')) {
-                    map.on('click', 'incroci', handlers.click);
-                }
-            }
-
             // COMPLETELY DISABLE segment interactions in auto-segment mode
             if (map.getLayer('sentieri')) {
                 // Remove ALL segment event handlers

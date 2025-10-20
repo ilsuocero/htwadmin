@@ -232,13 +232,7 @@ export const useEditModeManager = (getMap) => {
     });
 
     // Father state manages ALL event handlers
-    const clearAllEventHandlers = useCallback((forceClear = false) => {
-        // If not forced and we're already in the target mode, skip clearing
-        if (!forceClear && handlersSetupRef.current === currentMode) {
-            console.log('🚀 EDIT MODE MANAGER: Mode unchanged, skipping handler clear');
-            return;
-        }
-
+    const clearAllEventHandlers = useCallback(() => {
         console.log('🚀 EDIT MODE MANAGER: Clearing ALL event handlers');
         const map = getMap();
         if (!map) return;
@@ -276,7 +270,7 @@ export const useEditModeManager = (getMap) => {
         } catch (error) {
             console.warn('🛑 EDIT MODE MANAGER: Error clearing event handlers:', error);
         }
-    }, [getMap, currentMode]);
+    }, [getMap]);
 
     // Setup event handlers based on mode - father state manages ALL events
     const setupEventHandlers = useCallback((mode, handlers = {}) => {
